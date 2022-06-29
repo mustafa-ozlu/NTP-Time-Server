@@ -7,14 +7,12 @@ import queue
 import threading
 import select
 import os
-import ctypes
-import os
+from sys import exit
 from time import strftime
 import tkinter.scrolledtext as tkscrolledtext
 import pyglet
 from infi.systray import SysTrayIcon
 from PIL import Image
-
 pyglet.font.add_file('DS-DIGI.TTF')
 pyglet.font.add_file('DS-DIGIB.TTF')
 global mainFrame
@@ -24,20 +22,8 @@ mainFrame.resizable(0,0)
 mainFrame.configure(bg="black")
 mainFrame.title("NTP Zaman Sunucu")
 mainFrame.iconbitmap(default="favicon.ico")
-#ctypes.windll.user32.ShowWindow( ctypes.windll.kernel32.GetConsoleWindow(), 6 )
 taskqueue = queue.Queue()
 stopFlag = False
-os.system('title NTP Zaman Sunucusu by Mustafa ÖZLÜ')
-def cikis():
-    try:
-        
-        mainFrame.destroy()
-
-        
-    except Exception :
-        socket.close()
-        systray.shutdown()
-        mainFrame.destroy()
 
 def goster(Tk):
     mainFrame.deiconify()
@@ -46,9 +32,9 @@ def gizle():
     mainFrame.withdraw()
     systray.start()
 def on_quit(systray):
-    cikis()
-    mainFrame.destroy()
-    systray.shutdown()
+##    mainFrame.destroy()
+##    systray.shutdown()
+    quit()
 
 menu_options = (("Göster", None, goster),)
 systray = SysTrayIcon("favicon.ico", "NTP Zaman Sunucu", menu_options,on_quit)
