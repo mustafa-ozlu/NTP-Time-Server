@@ -1,6 +1,3 @@
-"""
-NTP Time Server GUI
-"""
 from tkinter import *
 import datetime
 import socket
@@ -13,13 +10,11 @@ import os
 from sys import exit
 from time import strftime
 import tkinter.scrolledtext as tkscrolledtext
-from pystray import MenuItem as item
-import pystray
 import pyglet
-from PIL import Image, ImageTk
+from infi.systray import SysTrayIcon
+from PIL import Image
 pyglet.font.add_file('DS-DIGI.TTF')
 pyglet.font.add_file('DS-DIGIB.TTF')
-
 global mainFrame
 mainFrame=Tk()
 mainFrame.geometry("300x300")
@@ -32,22 +27,7 @@ mainFrame.iconbitmap(default="favicon.ico")
 taskqueue = queue.Queue()
 stopFlag = False
 
-def cikis(icon,item):
-    icon.stop()
-    mainFrame.destroy()
 
-def goster(icon,item):
-    icon.stop()
-    mainFrame.after(0,mainFrame.deiconify())
-
-def gizle():
-    mainFrame.withdraw()
-    image=Image.open("favicon.ico")
-    menu= (item("Çıkış", cikis),item("Göster",goster))
-    icon=pystray.Icon("name",image, "NTP Zaman Sunucu", menu)
-    icon.run()
-
-mainFrame.protocol('WM_DELETE_WINDOW',gizle)
 def saat():
     string=strftime("%H:%M:%S")
     label.config(text=string)
@@ -337,6 +317,30 @@ class WorkThread(threading.Thread):
             except queue.Empty:
                 continue
     
+listenIp = "0.0.0.0"
+listenPort = 123
+
+    
+def goster(Tk):
+    mainFrame.deiconify()
+
+def gizle():
+    mainFrame.withdraw()
+    systray.start()
+def on_quit( sys):
+    mainFrame.quit()
+    mainFrame.after(1,mainFrame.destroy)
+    exit()
+def cikis():
+    print("Exiting...")
+    mainFrame.quit()
+    mainFrame.after(1,mainFrame.destroy)
+    exit(1)
+    
+
+menu_options = (("Göster", None, goster),)
+systray = SysTrayIcon("favicon.ico", "NTP Zaman Sunucu", menu_options,on_quit)
+mainFrame.protocol("WM_DELETE_WINDOW", cikis)
 
 label=Label(mainFrame,font=("Ds-Digital",60),background="black",foreground="green2")
 label.pack(anchor="center",fill=BOTH,padx=5,pady=5)
@@ -356,22 +360,18 @@ but2.pack(anchor="center",fill=BOTH,padx=5,pady=5)
 
 label11=Label(mainFrame,text="Program by Mustafa ÖZLÜ - 2022",background="black",foreground="green3",font=('ArialBold', '7','bold'),width=60)
 label11.pack(anchor="center",fill=BOTH,padx=5,pady=5)
-
-
-listenIp = "0.0.0.0"
-listenPort = 123
-try:
-    socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
     
-except os.error:
+try:
+    socket.bind((listenIp,listenPort))
+except Exception :
     text.insert("end","NTP Portu (123) Kullanımda\n")
-    print("NTP Portu (123) Kullanımda\n")
-socket.bind((listenIp,listenPort))
-
+trayicon=threading.Thread(target=systray.start(),args=("thread-2"),)
 recvThread = RecvThread(socket)
 recvThread.start()
 workThread = WorkThread(socket)
 workThread.start()
+trayicon.start()
 
 while True:
     saat()
@@ -383,7 +383,11 @@ while True:
     except KeyboardInterrupt:
         print ("Cikis yapiliyor...")
         stopFlag = True
+        trayicon.should_abort_immediately = True
+        trayicon.join()
+        recv.should_abort_immediately = True
         recvThread.join()
+        workThread.should_abort_immediately = True
         workThread.join()
         socket.close()
         text.insert('1.0',"Port Kapatıldı...\n")
@@ -394,3 +398,8 @@ while True:
         break
     except Exception:
         break
+    except RuntimeError:
+        sys.exit(1)
+
+   
+
